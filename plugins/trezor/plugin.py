@@ -252,25 +252,24 @@ class TrezorCompatiblePlugin(HW_PluginBase):
             wallet.keystore.handler.show_error(_("Your device firmware is too old"))
             return
         change, index = wallet.get_address_index(address)
-        xpubs = wallet.get_master_public_keys()
         derivation = wallet.keystore.derivation
         address_path = "%s/%d/%d"%(derivation, change, index)
         address_n = client.expand_path(address_path)
+        script_gen = wallet.keystore.get_script_gen()
+		if script_gen == SCRIPT_GEN_NATIVE_SEGWIT:
+			script_type = self.types.InputScriptType.SPENDWITNESS
+		elif script_gen == SCRIPT_GEN_P2SH_SEGWIT:
+			script_type = self.types.InputScriptType.SPENDP2SHWITNESS
+		else:
+		   script_type = self.types.InputScriptType.SPENDADDRESS
+        xpubs = wallet.get_master_public_keys()
         if len(xpubs) == 1:
-            script_gen = wallet.keystore.get_script_gen()
-            if script_gen == SCRIPT_GEN_NATIVE_SEGWIT:
-                script_type = self.types.InputScriptType.SPENDWITNESS
-            elif script_gen == SCRIPT_GEN_P2SH_SEGWIT:
-                script_type = self.types.InputScriptType.SPENDP2SHWITNESS
-            else:
-               script_type = self.types.InputScriptType.SPENDADDRESS
             client.get_address(self.get_coin_name(), address_n, True, script_type=script_type)
         else:
             def f(xpub):
                 node = self.ckd_public.deserialize(xpub)
                 return self.types.HDNodePathType(node=node, address_n=[change, index])
             pubkeys = list(map(f, xpubs))
-            print(pubkeys)
             multisig = self.types.MultisigRedeemScriptType(
                pubkeys=pubkeys,
                signatures=[b''] * len(xpubs), 

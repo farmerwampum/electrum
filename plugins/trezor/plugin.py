@@ -269,7 +269,10 @@ class TrezorCompatiblePlugin(HW_PluginBase):
             def f(xpub):
                 node = self.ckd_public.deserialize(xpub)
                 return self.types.HDNodePathType(node=node, address_n=[change, index])
-            pubkeys = list(map(f, xpubs))
+            pubkeys = wallet.get_public_keys(address)
+            # sort xpubs using the order of pubkeys
+            sorted_pubkeys, sorted_xpubs = zip(*sorted(zip(pubkeys, xpubs)))
+            pubkeys = list(map(f, sorted_xpubs))
             multisig = self.types.MultisigRedeemScriptType(
                pubkeys=pubkeys,
                signatures=[b''] * len(xpubs), 
